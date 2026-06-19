@@ -92,8 +92,9 @@
                     <label class="block text-[10px] uppercase tracking-wider mb-1">KAYNAK (PROVIDER)</label>
                     <select id="provider" class="w-full p-2 text-sm outline-none">
                         <option value="videasy">1. VIDEASY.NET (PRIMARY)</option>
-                        <option value="vidsrc_pro">2. VIDSRC.PRO (BACKUP)</option>
-                        <option value="vidsrc_to">3. VIDSRC.TO (FALLBACK)</option>
+                        <option value="videasy_to">2. VIDEASY.TO (NEW)</option>
+                        <option value="vidsrc_pro">3. VIDSRC.PRO (BACKUP)</option>
+                        <option value="vidsrc_to">4. VIDSRC.TO (FALLBACK)</option>
                     </select>
                 </div>
 
@@ -156,7 +157,6 @@
             resultsDiv.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Aranıyor...</p>';
 
             try {
-                // api.eness.me/api/search?q=kelime şeklinde backend'e gidiyoruz
                 const response = await fetch(`${MY_API_BASE}?q=${encodeURIComponent(query)}`);
                 const results = await response.json();
 
@@ -167,7 +167,6 @@
 
                 resultsDiv.innerHTML = '';
                 
-                // Gelen temiz veriyi liste elementlerine döküyoruz
                 results.forEach(item => {
                     const typeText = item.media_type === 'movie' ? 'FİLM' : 'DİZİ';
 
@@ -178,17 +177,14 @@
                         <span class="text-[9px] border border-current px-1 flex-shrink-0">${typeText}</span>
                     `;
                     
-                    // Listedeki bir sonuca tıklandığında tetiklenecek olaylar
                     div.onclick = async () => {
                         document.getElementById('contentType').value = item.media_type;
                         document.getElementById('tmdbId').value = item.id;
                         document.getElementById('playingTitle').innerText = `SEÇİLEN: ${item.title} ${item.year}`;
                         toggleType();
                         
-                        // Önceki aramadan kalan IMDB ID hücresini sıfırla
                         document.getElementById('imdbId').value = ''; 
                         
-                        // Yedek kaynak stabilizasyonu için arka planda aynı dosyadan IMDB ID çekiyoruz
                         try {
                             const detailRes = await fetch(`${MY_API_BASE}?type=${item.media_type}&id=${item.id}`);
                             const detailData = await detailRes.json();
@@ -199,7 +195,6 @@
                             console.error("Yedek IMDB ID alınamadı, TMDB ID ile devam ediliyor.");
                         }
 
-                        // Seçim biter bitmez videoyu doğrudan yükle
                         loadVideo();
                     };
 
@@ -232,6 +227,8 @@
             if (type === 'movie') {
                 if (provider === 'videasy') {
                     finalUrl = `https://player.videasy.net/movie/${tmdbId}`;
+                } else if (provider === 'videasy_to') {
+                    finalUrl = `https://videasy.to/embed/movie/${tmdbId}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
                 } else if (provider === 'vidsrc_to') {
@@ -241,6 +238,8 @@
             } else {
                 if (provider === 'videasy') {
                     finalUrl = `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
+                } else if (provider === 'videasy_to') {
+                    finalUrl = `https://videasy.to/embed/tv/${tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_to') {

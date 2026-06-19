@@ -91,10 +91,9 @@
                 <div>
                     <label class="block text-[10px] uppercase tracking-wider mb-1">KAYNAK (PROVIDER)</label>
                     <select id="provider" class="w-full p-2 text-sm outline-none">
-                        <option value="videasy">1. VIDEASY.NET (PRIMARY)</option>
-                        <option value="videasy_to">2. VIDEASY.TO (NEW)</option>
-                        <option value="vidsrc_pro">3. VIDSRC.PRO (BACKUP)</option>
-                        <option value="vidsrc_to">4. VIDSRC.TO (FALLBACK)</option>
+                        <option value="videasy">1. VIDEASY (RECOMMENDED)</option>
+                        <option value="vidsrc_pro">2. VIDSRC.PRO (BACKUP)</option>
+                        <option value="vidsrc_to">3. VIDSRC.TO (FALLBACK)</option>
                     </select>
                 </div>
 
@@ -124,48 +123,48 @@
     </footer>
 
     <script>
-        // Yeni Vercel Sunucusundaki Arama Endpoint Adresin
+        // api.eness.me üzerindeki Vercel Endpoint adresin
         const MY_API_BASE = "https://api.eness.me/api/search"; 
 
-        // Sayfa ilk açıldığında varsayılan olarak (Inception) filmini yükle
+        // Sayfa açıldığında Inception'ı otomatik yükle
         window.addEventListener('DOMContentLoaded', () => {
             loadVideo();
         });
 
-        // Input alanında enter tuşunu dinle
+        // Enter tuşu ile arama dinleyici
         document.getElementById('searchQuery').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') searchContent();
         });
 
-        // İçerik tipine göre dizi ayarlarını göster/gizle
+        // İçerik tipine göre Sezon/Bölüm input kontrolü
         function toggleType() {
             const type = document.getElementById('contentType').value;
             const tvOptions = document.getElementById('tvOptions');
             tvOptions.style.display = (type === 'tv') ? 'grid' : 'none';
         }
 
-        // Kendi API'nden film/dizi arama fonksiyonu
+        // Arama tetikleyici fonksiyon
         async function searchContent() {
             const query = document.getElementById('searchQuery').value.trim();
-            const resultsDiv = document.getElementById('searchResults');
+            const GeistResults = document.getElementById('searchResults');
             
             if (!query) {
-                resultsDiv.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Lütfen bir kelime yazın.</p>';
+                GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Lütfen bir kelime yazın.</p>';
                 return;
             }
 
-            resultsDiv.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Aranıyor...</p>';
+            GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Aranıyor...</p>';
 
             try {
                 const response = await fetch(`${MY_API_BASE}?q=${encodeURIComponent(query)}`);
                 const results = await response.json();
 
                 if (!results || results.length === 0) {
-                    resultsDiv.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Sonuç bulunamadı.</p>';
+                    GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Sonuç bulunamadı.</p>';
                     return;
                 }
 
-                resultsDiv.innerHTML = '';
+                GeistResults.innerHTML = '';
                 
                 results.forEach(item => {
                     const typeText = item.media_type === 'movie' ? 'FİLM' : 'DİZİ';
@@ -185,6 +184,7 @@
                         
                         document.getElementById('imdbId').value = ''; 
                         
+                        // Arka planda IMDB ID sorgusu (vidsrc yedekleri için)
                         try {
                             const detailRes = await fetch(`${MY_API_BASE}?type=${item.media_type}&id=${item.id}`);
                             const detailData = await detailRes.json();
@@ -192,21 +192,21 @@
                                 document.getElementById('imdbId').value = detailData.imdb_id;
                             }
                         } catch(e) {
-                            console.error("Yedek IMDB ID alınamadı, TMDB ID ile devam ediliyor.");
+                            console.error("Yedek IMDB ID alınamadı, TMDB ID aktif.");
                         }
 
                         loadVideo();
                     };
 
-                    resultsDiv.appendChild(div);
+                    GeistResults.appendChild(div);
                 });
 
             } catch (error) {
-                resultsDiv.innerHTML = '<p class="text-red-500 italic py-2 px-1">Arama sırasında bir hata oluştu.</p>';
+                GeistResults.innerHTML = '<p class="text-red-500 italic py-2 px-1">Arama sırasında bir hata oluştu.</p>';
             }
         }
 
-        // Iframe kaynak yönlendirmesi ve oynatıcı yükleme fonksiyonu
+        // Iframe URL oluşturucu ve yükleyici fonksiyon
         function loadVideo() {
             const type = document.getElementById('contentType').value;
             const tmdbId = document.getElementById('tmdbId').value.trim();
@@ -226,9 +226,8 @@
 
             if (type === 'movie') {
                 if (provider === 'videasy') {
+                    // Resmi dokümantasyondaki player URL yapısı
                     finalUrl = `https://player.videasy.net/movie/${tmdbId}`;
-                } else if (provider === 'videasy_to') {
-                    finalUrl = `https://videasy.to/embed/movie/${tmdbId}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
                 } else if (provider === 'vidsrc_to') {
@@ -237,9 +236,8 @@
                 status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId})`;
             } else {
                 if (provider === 'videasy') {
+                    // Resmi dokümantasyondaki player dizi yapısı
                     finalUrl = `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
-                } else if (provider === 'videasy_to') {
-                    finalUrl = `https://videasy.to/embed/tv/${tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_to') {

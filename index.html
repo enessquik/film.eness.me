@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FILM.ENESS.ME • STANDALONE STREAMING SYSTEM</title>
+    <title>FILM.ENESS.ME</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,200 +11,292 @@
             color: #ffffff;
             font-family: monospace;
         }
+        input, select, button {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+        }
+        button:hover {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        iframe {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ffffff;
+        }
     </style>
 </head>
-<body class="p-6 md:p-12">
+<body class="p-4 md:p-8 max-w-7xl mx-auto">
 
     <header class="border-b border-white pb-4 mb-8 flex justify-between items-center">
-        <h1 class="text-xl font-bold tracking-widest">FILM.ENESS.ME</h1>
-        <span class="text-xs border border-white px-2 py-1 uppercase tracking-wider">Live Search & Play</span>
+        <h1 class="text-2xl font-bold tracking-widest">FILM.ENESS.ME</h1>
+        <span class="text-xs border border-white px-2 py-1">LIVE SEARCH & PLAY</span>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <div class="space-y-6 lg:col-span-1">
+        <section class="lg:col-span-4 space-y-6">
             
-            <div class="border border-white p-4">
-                <h2 class="text-xs uppercase tracking-widest mb-4 border-b border-white pb-2">Film / Dizi Ara</h2>
+            <!-- ARAMA BÖLÜMÜ -->
+            <div class="border border-white p-4 space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider mb-2 font-bold">FİLM / DİZİ ARA</label>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="searchQuery" placeholder="Örn: Inception, Matrix..." class="w-full p-2 text-sm outline-none">
+                        <button onclick="searchContent()" class="px-4 text-sm font-bold">ARA</button>
+                    </div>
+                </div>
+
+                <!-- Sezon / Bölüm Ayarları -->
+                <div id="searchTvOptions" class="hidden grid grid-cols-2 gap-4 border border-zinc-800 p-2 bg-zinc-950/20">
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider mb-1">SEZON</label>
+                        <input type="number" id="season" value="1" min="1" class="w-full p-2 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider mb-1">BÖLÜM</label>
+                        <input type="number" id="episode" value="1" min="1" class="w-full p-2 text-sm outline-none">
+                    </div>
+                </div>
                 
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="searchInput" placeholder="Örn: Inception, Matrix..." class="w-full bg-black border border-white p-2 text-white font-mono focus:outline-none placeholder-gray-600">
-                    <button onclick="searchContent()" class="border border-white px-4 py-2 hover:bg-white hover:text-black transition uppercase text-xs font-bold">Ara</button>
+                <!-- Arama Sonuçları -->
+                <div id="searchResults" class="max-h-60 overflow-y-auto space-y-1 text-xs divide-y divide-zinc-800 border border-zinc-800 p-1 empty:hidden">
+                    <p class="text-gray-500 italic py-2 px-1">Henüz arama yapılmadı.</p>
                 </div>
 
-                <div id="searchResults" class="text-xs max-h-40 overflow-y-auto space-y-2 text-gray-400">
-                    Henüz arama yapılmadı.
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-gray-800 space-y-3">
+                <!-- Okuldayım Modu Checkbox -->
+                <div class="pt-1">
                     <label class="flex items-center space-x-2 text-xs uppercase tracking-wider cursor-pointer select-none">
-                        <input type="checkbox" id="mebBypassToggle" class="accent-white h-4 w-4 bg-black border border-white rounded-none">
-                        <span>Okuldayım (MEB BYPASS)</span>
+                        <input type="checkbox" id="mebBypassToggle" class="accent-white h-4 w-4 bg-black border border-white rounded-none" onchange="syncProviderWithMeb(this)">
+                        <span class="font-bold">Okuldayım (MEB BYPASS)</span>
                     </label>
                 </div>
             </div>
 
+            <!-- SİSTEM AYARLARI -->
             <div class="border border-white p-4">
                 <details class="group">
-                    <summary class="text-xs uppercase tracking-widest cursor-pointer list-none flex justify-between items-center select-none">
+                    <summary class="text-xs font-bold uppercase tracking-wider cursor-pointer list-none flex justify-between items-center select-none border-b border-white pb-1">
                         <span>Sistem Ayarları</span>
                         <span class="group-open:hidden">[+]</span>
                         <span class="hidden group-open:inline">[-]</span>
                     </summary>
-                    <div class="mt-4 space-y-3 text-xs">
-                        <div class="flex flex-col gap-1">
-                            <label>İÇERİK TÜRÜ:</label>
-                            <select id="contentType" class="bg-black border border-white p-1 font-mono text-white focus:outline-none">
+                    
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider mb-1">İÇERİK TÜRÜ</label>
+                            <select id="contentType" class="w-full p-2 text-sm outline-none" onchange="toggleType()">
                                 <option value="movie">FILM</option>
                                 <option value="tv">DIZI</option>
                             </select>
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <label>TMDB ID:</label>
-                            <input type="text" id="tmdbId" class="bg-black border border-white p-1 font-mono text-white focus:outline-none">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="flex flex-col gap-1">
-                                <label>SEZON:</label>
-                                <input type="number" id="season" value="1" min="1" class="bg-black border border-white p-1 font-mono text-white focus:outline-none">
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] uppercase tracking-wider mb-1">TMDB ID</label>
+                                <input type="text" id="tmdbId" value="27205" class="w-full p-2 text-sm outline-none">
                             </div>
-                            <div class="flex flex-col gap-1">
-                                <label>BÖLÜM:</label>
-                                <input type="number" id="episode" value="1" min="1" class="bg-black border border-white p-1 font-mono text-white focus:outline-none">
+                            <div>
+                                <label class="block text-[10px] uppercase tracking-wider mb-1">IMDB ID (OPSİYONEL)</label>
+                                <input type="text" id="imdbId" value="" class="w-full p-2 text-sm outline-none" placeholder="tt...">
                             </div>
                         </div>
-                        <button onclick="loadVideoDirect()" class="w-full border border-white py-1 hover:bg-white hover:text-black transition uppercase font-bold text-[10px]">Manuel Yükle</button>
+
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider mb-1">KAYNAK (PROVIDER)</label>
+                            <select id="provider" class="w-full p-2 text-sm outline-none" onchange="syncMebWithProvider(this)">
+                                <option value="videasy">1. VIDEASY (RECOMMENDED)</option>
+                                <option value="videasy_proxy">1B. VIDEASY (OKULDAYIM - MEB BYPASS)</option>
+                                <option value="vidsrc_pro">2. VIDSRC.PRO (BACKUP)</option>
+                                <option value="vidsrc_to">3. VIDSRC.TO (FALLBACK)</option>
+                            </select>
+                        </div>
                     </div>
                 </details>
-            </div>
-        </div>
 
-        <div class="lg:col-span-2 space-y-4">
-            <div class="flex justify-between items-center text-[10px] tracking-wider text-gray-400">
-                <span id="selectedTitle" class="uppercase font-bold text-white">SEÇİLEN: HENÜZ YOK</span>
-                <span id="playerStatus" class="uppercase">BEKLEMEDE</span>
+                <button onclick="loadVideo()" class="w-full p-3 text-sm font-bold uppercase tracking-widest transition-all duration-200 mt-4">
+                    OYNATICIYI YÜKLE ▲
+                </button>
             </div>
+        </section>
 
-            <div class="relative w-full aspect-video border border-white bg-black overflow-hidden flex items-center justify-center">
-                <iframe 
-                    id="playerFrame" 
-                    src="about:blank" 
-                    class="absolute top-0 left-0 w-full h-full border-0 m-0 p-0"
-                    allowfullscreen 
-                    allow="autoplay; encrypted-media">
-                </iframe>
+        <!-- PLAYER BÖLÜMÜ -->
+        <section class="lg:col-span-8">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs uppercase font-bold" id="playingTitle">SEÇİLEN: Inception (2010)</span>
+                <label class="text-[10px] uppercase tracking-wider" id="playerStatus">OYNATICI: HAZIR</label>
             </div>
-
-            <p class="text-[10px] text-gray-500 leading-relaxed">
-                * Seçtiğiniz içerik yüklenmiyorsa veya MEB ağındaysanız "Okuldayım (MEB BYPASS)" seçeneğinin işaretli olduğundan emin olun. Tünel sistemi tamamen meb.eness.me üzerinden maskelenerek akmaktadır.
+            <div class="relative w-full aspect-video">
+                <iframe id="playerFrame" src="about:blank" class="w-full h-full" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-2 tracking-tight">
+                * Seçtiğiniz içerik yüklenmiyorsa kaynak (provider) değiştirip tekrar "Oynatıcıyı Yükle" butonuna basın. Okul ağındayken "Okuldayım (MEB BYPASS)" modunu aktif edin.
             </p>
-        </div>
-    </div>
+        </section>
 
-    <footer class="border-t border-white/20 mt-12 pt-4 text-center text-[10px] text-gray-600 tracking-widest">
+    </main>
+
+    <footer class="border-t border-white mt-12 pt-4 text-center text-xs tracking-widest text-gray-400">
         FILM.ENESS.ME • STANDALONE STREAMING SYSTEM
     </footer>
 
     <script>
-        // Sunucu ve Proxy Yapılandırmaları
-        const MEB_BYPASS_DOMAIN = "https://meb.eness.me"; 
-        const ORIGINAL_DOMAIN = "https://player.videasy.net";
-        const SEARCH_API_URL = "https://api.eness.me/api/search";
+        const MY_API_BASE = "https://api.eness.me/api/search"; 
+        const MEB_BYPASS_DOMAIN = "https://meb.eness.me";
 
-        // 1. İçerik Arama Fonksiyonu
+        window.addEventListener('DOMContentLoaded', () => {
+            loadVideo();
+        });
+
+        document.getElementById('searchQuery').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') searchContent();
+        });
+
+        function toggleType() {
+            const type = document.getElementById('contentType').value;
+            const searchTvOptions = document.getElementById('searchTvOptions');
+            searchTvOptions.style.display = (type === 'tv') ? 'grid' : 'none';
+        }
+
+        function syncProviderWithMeb(checkbox) {
+            const providerSelect = document.getElementById('provider');
+            if (checkbox.checked) {
+                providerSelect.value = 'videasy_proxy';
+            } else {
+                providerSelect.value = 'videasy';
+            }
+            // MOD: Seçim değiştikten sonra otomatik olarak videoyu tetikle
+            loadVideo();
+        }
+
+        document.getElementById('provider').addEventListener('change', function() {
+            syncMebWithProvider(this);
+        });
+
+        function syncMebWithProvider(select) {
+            const toggle = document.getElementById('mebBypassToggle');
+            toggle.checked = (select.value === 'videasy_proxy');
+        }
+
         async function searchContent() {
-            const query = document.getElementById('searchInput').value.trim();
-            const resultsDiv = document.getElementById('searchResults');
+            const query = document.getElementById('searchQuery').value.trim();
+            const GeistResults = document.getElementById('searchResults');
             
             if (!query) {
-                alert("Lütfen arama terimi girin.");
+                GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Lütfen bir kelime yazın.</p>';
                 return;
             }
 
-            resultsDiv.innerText = "Aranıyor...";
+            GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Aranıyor...</p>';
 
             try {
-                const response = await fetch(`${SEARCH_API_URL}?q=${encodeURIComponent(query)}`);
-                if (!response.ok) throw new Error("Arama sunucusundan yanıt alınamadı.");
-                
+                const response = await fetch(`${MY_API_BASE}?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
-                resultsDiv.innerHTML = "";
 
-                if (!data.results || data.results.length === 0) {
-                    resultsDiv.innerText = "Sonuç bulunamadı.";
+                const finalArray = Array.isArray(data) ? data : (data.results || []);
+
+                if (!finalArray || finalArray.length === 0) {
+                    GeistResults.innerHTML = '<p class="text-gray-500 italic py-2 px-1">Sonuç bulunamadı.</p>';
                     return;
                 }
 
-                data.results.forEach(item => {
-                    const title = item.title || item.name;
-                    const year = item.release_date ? item.release_date.split('-')[0] : (item.first_air_date ? item.first_air_date.split('-')[0] : 'N/A');
-                    const type = item.media_type || (item.title ? 'movie' : 'tv');
+                GeistResults.innerHTML = '';
+                
+                finalArray.forEach(item => {
+                    const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+                    const typeText = mediaType === 'movie' ? 'FİLM' : 'DİZİ';
+                    const titleText = item.title || item.name || "Bilinmeyen İçerik";
+                    const yearText = item.year || (item.release_date ? item.release_date.split('-')[0] : '');
+
+                    const div = document.createElement('div');
+                    div.className = 'py-2 cursor-pointer hover:bg-white hover:text-black transition-all duration-150 px-2 flex justify-between items-center';
                     
-                    const btn = document.createElement('button');
-                    btn.className = "w-full text-left p-2 hover:bg-white/10 border border-transparent hover:border-white/20 block truncate transition mb-1 uppercase";
-                    btn.innerText = `[${type.toUpperCase()}] ${title} (${year})`;
-                    btn.onclick = () => selectContent(item, type, title, year);
-                    resultsDiv.appendChild(btn);
+                    div.innerHTML = `
+                        <span class="pr-2 truncate">${titleText} ${yearText ? `${yearText}` : ''}</span>
+                        <span class="text-[9px] border border-current px-1 flex-shrink-0">${typeText}</span>
+                    `;
+                    
+                    div.onclick = async () => {
+                        document.getElementById('season').value = 1;
+                        document.getElementById('episode').value = 1;
+
+                        document.getElementById('contentType').value = mediaType;
+                        document.getElementById('tmdbId').value = item.id;
+                        document.getElementById('playingTitle').innerText = `SEÇİLEN: ${titleText} ${yearText ? `${yearText}` : ''}`;
+                        toggleType();
+                        
+                        document.getElementById('imdbId').value = ''; 
+                        
+                        try {
+                            const detailRes = await fetch(`${MY_API_BASE}?type=${mediaType}&id=${item.id}`);
+                            const detailData = await detailRes.json();
+                            if (detailData.imdb_id) {
+                                document.getElementById('imdbId').value = detailData.imdb_id;
+                            }
+                        } catch(e) {
+                            console.error("Yedek IMDB ID alınamadı.");
+                        }
+
+                        loadVideo();
+                    };
+
+                    GeistResults.appendChild(div);
                 });
 
             } catch (error) {
-                resultsDiv.innerText = "Hata: " + error.message;
+                GeistResults.innerHTML = '<p class="text-red-500 italic py-2 px-1">Arama sırasında bir hata oluştu.</p>';
             }
         }
 
-        // 2. Aramadan İçerik Seçildiğinde Formu Doldur ve Oynat
-        function selectContent(item, type, title, year) {
-            document.getElementById('contentType').value = type;
-            document.getElementById('tmdbId').value = item.id;
-            document.getElementById('selectedTitle').innerText = `SEÇİLEN: ${title} (${year})`;
-            
-            if (type === 'tv') {
-                document.getElementById('season').value = 1;
-                document.getElementById('episode').value = 1;
-            }
-            
-            // Seçildiği an otomatik olarak oynatıcıyı tetikle
-            loadVideo();
-        }
-
-        // 3. Gelişmiş Ayarlardan Manuel Butona Basılırsa
-        function loadVideoDirect() {
-            const tmdbId = document.getElementById('tmdbId').value.trim();
-            if (!tmdbId) {
-                alert("Lütfen önce bir TMDB ID girin.");
-                return;
-            }
-            document.getElementById('selectedTitle').innerText = `MANUEL GİRİŞ (ID: ${tmdbId})`;
-            loadVideo();
-        }
-
-        // 4. Ana Oynatma ve Tünelleme Motoru
         function loadVideo() {
             const type = document.getElementById('contentType').value;
             const tmdbId = document.getElementById('tmdbId').value.trim();
+            const imdbId = document.getElementById('imdbId').value.trim();
             const season = document.getElementById('season').value;
             const episode = document.getElementById('episode').value;
+            const provider = document.getElementById('provider').value;
             const frame = document.getElementById('playerFrame');
             const status = document.getElementById('playerStatus');
-            const isMebBypassActive = document.getElementById('mebBypassToggle').checked;
 
-            let path = "";
+            if (!tmdbId && !imdbId) {
+                alert("Lütfen bir içerik seçin veya TMDB ID girin.");
+                return;
+            }
+
+            let finalUrl = "";
+
             if (type === 'movie') {
-                path = `/movie/${tmdbId}`;
-                status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId})`;
+                if (provider === 'videasy') {
+                    finalUrl = `https://player.videasy.net/movie/${tmdbId}`;
+                } else if (provider === 'videasy_proxy') {
+                    finalUrl = `${MEB_BYPASS_DOMAIN}/movie/${tmdbId}`;
+                } else if (provider === 'vidsrc_pro') {
+                    finalUrl = `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
+                } else if (provider === 'vidsrc_to') {
+                    finalUrl = `https://vidsrc.to/embed/movie/${tmdbId}`;
+                }
+                status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId}) ${provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
             } else {
-                path = `/tv/${tmdbId}/${season}/${episode}`;
-                status.innerText = `OYNATILIYOR: DIZI (S:${season} B:${episode})`;
+                if (provider === 'videasy') {
+                    finalUrl = `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
+                } else if (provider === 'videasy_proxy') {
+                    finalUrl = `${MEB_BYPASS_DOMAIN}/tv/${tmdbId}/${season}/${episode}`;
+                } else if (provider === 'vidsrc_pro') {
+                    finalUrl = `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
+                } else if (provider === 'vidsrc_to') {
+                    finalUrl = `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`;
+                }
+                status.innerText = `OYNATILIYOR: DIZI (S:${season} B:${episode}) ${provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
             }
 
-            // MEB Bypass Kutusu Tikliyse meb.eness.me üzerinden, değilse doğrudan orijinal Videasy üzerinden yükle
-            if (isMebBypassActive) {
-                frame.src = `${MEB_BYPASS_DOMAIN}${path}`;
-                status.innerText += " [MEB BYPASS ACTIVE]";
-            } else {
-                frame.src = `${ORIGINAL_DOMAIN}${path}`;
-                status.innerText += " [DIRECT MODE]";
-            }
+            frame.src = finalUrl;
         }
     </script>
 </body>
+</html>

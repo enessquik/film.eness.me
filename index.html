@@ -138,6 +138,14 @@
             <p class="text-[10px] text-gray-500 mt-2 tracking-tight">
                 * Seçtiğiniz içerik yüklenmiyorsa kaynak (provider) değiştirip tekrar "Oynatıcıyı Yükle" butonuna basın. Okul ağındayken "Okuldayım (MEB BYPASS)" modunu aktif edin.
             </p>
+            <div class="border border-white mt-4 p-3 space-y-3">
+                <div class="text-[10px] uppercase tracking-wider font-bold">İndirme</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button id="downloadEpisodeBtn" onclick="downloadCurrentSelection()" class="p-2 text-xs font-bold uppercase tracking-wider">Bu İçeriği İndir (.m3u)</button>
+                    <button id="downloadSeasonBtn" onclick="downloadSeasonSelection()" class="p-2 text-xs font-bold uppercase tracking-wider">Bu Sezonu İndir (.m3u)</button>
+                </div>
+                <p id="downloadStatus" class="text-[10px] text-gray-500">* Dizi için tek bölüm veya tam sezon oynatma listesi indirebilirsiniz.</p>
+            </div>
         </section>
 
     </main>
@@ -149,6 +157,7 @@
     <script>
         const MY_API_BASE = "https://api.eness.me/api/search"; 
         const MEB_BYPASS_DOMAIN = "https://meb.eness.me";
+        const TMDB_API_KEY = "15d2ea6d0dc1d476efbca3eba2b9a775";
 
         window.addEventListener('DOMContentLoaded', () => {
             loadVideo();
@@ -162,6 +171,15 @@
             const type = document.getElementById('contentType').value;
             const searchTvOptions = document.getElementById('searchTvOptions');
             searchTvOptions.style.display = (type === 'tv') ? 'grid' : 'none';
+            refreshDownloadControls();
+        }
+
+        function refreshDownloadControls() {
+            const type = document.getElementById('contentType').value;
+            const seasonButton = document.getElementById('downloadSeasonBtn');
+            seasonButton.disabled = (type !== 'tv');
+            seasonButton.classList.toggle('opacity-40', type !== 'tv');
+            seasonButton.classList.toggle('cursor-not-allowed', type !== 'tv');
         }
 
         function syncProviderWithMeb(checkbox) {
@@ -254,45 +272,144 @@
             }
         }
 
+        function buildProviderUrl({ type, tmdbId, imdbId, season, episode, provider }) {
+            if (type === 'movie') {
+                if (provider === 'videasy') return `https://player.videasy.ws/movie/${tmdbId}`;
+                if (provider === 'videasy_proxy') return `${MEB_BYPASS_DOMAIN}/movie/${tmdbId}`;
+                if (provider === 'vidsrc_pro') return `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
+                if (provider === 'vidsrc_to') return `https://vidsrc.ws/embed/movie/${tmdbId}`;
+                return '';
+            }
+
+            if (provider === 'videasy') return `https://player.videasy.ws/tv/${tmdbId}/${season}/${episode}`;
+            if (provider === 'videasy_proxy') return `${MEB_BYPASS_DOMAIN}/tv/${tmdbId}/${season}/${episode}`;
+            if (provider === 'vidsrc_pro') return `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
+            if (provider === 'vidsrc_to') return `https://vidsrc.ws/embed/tv/${tmdbId}/${season}/${episode}`;
+            return '';
+        }
+
+        function getCurrentSelection() {
+            return {
+                type: document.getElementById('contentType').value,
+                tmdbId: document.getElementById('tmdbId').value.trim(),
+                imdbId: document.getElementById('imdbId').value.trim(),
+                season: Number(document.getElementById('season').value),
+                episode: Number(document.getElementById('episode').value),
+                provider: document.getElementById('provider').value
+            };
+        }
+
+        function sanitizeFileName(name) {
+            return name.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '.').trim();
+        }
+
+        function getSelectedTitle() {
+            return (document.getElementById('playingTitle').innerText || 'Icerik').replace(/^SEÇİLEN:\s*/i, '').trim();
+        }
+
+        function downloadTextFile(fileName, content) {
+            const blob = new Blob([content], { type: 'audio/x-mpegurl;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCurrentSelection() {
+            const selection = getCurrentSelection();
+            const status = document.getElementById('downloadStatus');
+
+            if (!selection.tmdbId && !selection.imdbId) {
+                status.innerText = 'Lütfen önce bir içerik seçin.';
+                return;
+            }
+
+            const safeTitle = sanitizeFileName(getSelectedTitle());
+            let playlistName = `${safeTitle}.m3u`;
+            let itemTitle = safeTitle;
+
+            if (selection.type === 'tv') {
+                if (!selection.season || !selection.episode) {
+                    status.innerText = 'Geçerli sezon ve bölüm girin.';
+                    return;
+                }
+                const paddedSeason = String(selection.season).padStart(2, '0');
+                const paddedEpisode = String(selection.episode).padStart(2, '0');
+                playlistName = `${safeTitle}.S${paddedSeason}E${paddedEpisode}.m3u`;
+                itemTitle = `${safeTitle} S${paddedSeason}E${paddedEpisode}`;
+            }
+
+            const episodeUrl = buildProviderUrl(selection);
+            const playlist = `#EXTM3U\n#EXTINF:-1,${itemTitle}\n${episodeUrl}\n`;
+            downloadTextFile(playlistName, playlist);
+            status.innerText = `${playlistName} indirildi.`;
+        }
+
+        async function downloadSeasonSelection() {
+            const selection = getCurrentSelection();
+            const status = document.getElementById('downloadStatus');
+
+            if (selection.type !== 'tv') {
+                status.innerText = 'Tam sezon indirme sadece diziler için kullanılabilir.';
+                return;
+            }
+            if (!selection.tmdbId || !selection.season) {
+                status.innerText = 'Lütfen geçerli dizi ve sezon seçin.';
+                return;
+            }
+
+            status.innerText = `Sezon ${selection.season} bölümleri hazırlanıyor...`;
+
+            try {
+                const seasonRes = await fetch(`https://api.themoviedb.org/3/tv/${selection.tmdbId}/season/${selection.season}?api_key=${TMDB_API_KEY}&language=tr-TR`);
+                const seasonData = await seasonRes.json();
+                const episodes = Array.isArray(seasonData.episodes) ? seasonData.episodes : [];
+
+                if (!episodes.length) {
+                    status.innerText = 'Sezon bölümleri alınamadı.';
+                    return;
+                }
+
+                const safeTitle = sanitizeFileName(getSelectedTitle());
+                const paddedSeason = String(selection.season).padStart(2, '0');
+
+                const playlistBody = episodes.map((ep) => {
+                    const epNumber = Number(ep.episode_number);
+                    const paddedEpisode = String(epNumber).padStart(2, '0');
+                    const epTitle = ep.name ? `${safeTitle} - ${ep.name}` : `${safeTitle} S${paddedSeason}E${paddedEpisode}`;
+                    const epUrl = buildProviderUrl({ ...selection, episode: epNumber });
+                    return `#EXTINF:-1,${epTitle}\n${epUrl}`;
+                }).join('\n');
+
+                const playlist = `#EXTM3U\n${playlistBody}\n`;
+                const playlistName = `${safeTitle}.S${paddedSeason}.m3u`;
+                downloadTextFile(playlistName, playlist);
+                status.innerText = `${playlistName} indirildi (${episodes.length} bölüm).`;
+            } catch (error) {
+                status.innerText = 'Sezon hazırlanırken bir hata oluştu.';
+            }
+        }
+
         function loadVideo() {
-            const type = document.getElementById('contentType').value;
-            const tmdbId = document.getElementById('tmdbId').value.trim();
-            const imdbId = document.getElementById('imdbId').value.trim();
-            const season = document.getElementById('season').value;
-            const episode = document.getElementById('episode').value;
-            const provider = document.getElementById('provider').value;
+            const selection = getCurrentSelection();
             const frame = document.getElementById('playerFrame');
             const status = document.getElementById('playerStatus');
 
-            if (!tmdbId && !imdbId) {
+            if (!selection.tmdbId && !selection.imdbId) {
                 alert("Lütfen bir içerik seçin veya TMDB ID girin.");
                 return;
             }
 
-            let finalUrl = "";
+            const finalUrl = buildProviderUrl(selection);
 
-            if (type === 'movie') {
-                if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.ws/movie/${tmdbId}`;
-                } else if (provider === 'videasy_proxy') {
-                    finalUrl = `${MEB_BYPASS_DOMAIN}/movie/${tmdbId}`;
-                } else if (provider === 'vidsrc_pro') {
-                    finalUrl = `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
-                } else if (provider === 'vidsrc_to') {
-                    finalUrl = `https://vidsrc.ws/embed/movie/${tmdbId}`;
-                }
-                status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId}) ${provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
+            if (selection.type === 'movie') {
+                status.innerText = `OYNATILIYOR: FILM (ID: ${selection.tmdbId}) ${selection.provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
             } else {
-                if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.ws/tv/${tmdbId}/${season}/${episode}`;
-                } else if (provider === 'videasy_proxy') {
-                    finalUrl = `${MEB_BYPASS_DOMAIN}/tv/${tmdbId}/${season}/${episode}`;
-                } else if (provider === 'vidsrc_pro') {
-                    finalUrl = `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
-                } else if (provider === 'vidsrc_to') {
-                    finalUrl = `https://vidsrc.ws/embed/tv/${tmdbId}/${season}/${episode}`;
-                }
-                status.innerText = `OYNATILIYOR: DIZI (S:${season} B:${episode}) ${provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
+                status.innerText = `OYNATILIYOR: DIZI (S:${selection.season} B:${selection.episode}) ${selection.provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
             }
 
             frame.src = finalUrl;

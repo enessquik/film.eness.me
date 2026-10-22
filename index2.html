@@ -206,7 +206,7 @@
 
             if (type === 'movie') {
                 if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.net/movie/${tmdbId}`;
+                    finalUrl = `https://player.videasy.ws/embed/movie/${tmdbId}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/movie/${imdbId ? imdbId : tmdbId}`;
                 } else if (provider === 'vidsrc_to') {
@@ -215,7 +215,7 @@
                 status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId})`;
             } else {
                 if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
+                    finalUrl = `https://player.videasy.ws/embed/tv/${tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_pro') {
                     finalUrl = `https://vidsrc.pro/embed/tv/${imdbId ? imdbId : tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_to') {

@@ -273,7 +273,7 @@
 
             if (type === 'movie') {
                 if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.ws/movie/${tmdbId}`;
+                    finalUrl = `https://player.videasy.ws/embed/movie/${tmdbId}`;
                 } else if (provider === 'videasy_proxy') {
                     finalUrl = `${MEB_BYPASS_DOMAIN}/movie/${tmdbId}`;
                 } else if (provider === 'vidsrc_pro') {
@@ -284,7 +284,7 @@
                 status.innerText = `OYNATILIYOR: FILM (ID: ${tmdbId}) ${provider === 'videasy_proxy' ? '[MEB BYPASS]' : ''}`;
             } else {
                 if (provider === 'videasy') {
-                    finalUrl = `https://player.videasy.ws/tv/${tmdbId}/${season}/${episode}`;
+                    finalUrl = `https://player.videasy.ws/embed/tv/${tmdbId}/${season}/${episode}`;
                 } else if (provider === 'videasy_proxy') {
                     finalUrl = `${MEB_BYPASS_DOMAIN}/tv/${tmdbId}/${season}/${episode}`;
                 } else if (provider === 'vidsrc_pro') {
